@@ -8,7 +8,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
@@ -28,29 +28,35 @@ input,textarea,button{font-family:'Lato',sans-serif;}
 <script type="text/babel">
 const { useState, useEffect, useCallback } = React;
 const ADMIN_PW    = "TrueNorth24";
-const ADMIN_EMAIL  = "mdkorver@gmail.com";
-const BREVO_KEY    = "xkeysib-c1d95fdb6080e390a89ee524b0dff81933f40eac2ef5";
-const SENDER_EMAIL = "mdkorver@gmail.com";
-const SENDER_NAME  = "BlaineView Cabins";
+const ADMIN_EMAIL = "mdkorver@gmail.com";
+const EJS_SERVICE = "service_kjhgxm3";
+const EJS_TMPL    = "template_ez1sbvh";
+const EJS_KEY     = "A4H7FHhzsAsT6dq3";
+
+const waitForEmailJS = () => new Promise((resolve) => {
+  if (window.emailjs) { resolve(); return; }
+  const interval = setInterval(() => {
+    if (window.emailjs) { clearInterval(interval); resolve(); }
+  }, 100);
+  setTimeout(() => { clearInterval(interval); resolve(); }, 5000);
+});
 
 const sendEmail = async (toEmail, toName, subject, message) => {
   try {
-    const res = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "api-key": BREVO_KEY
-      },
-      body: JSON.stringify({
-        sender: { name: SENDER_NAME, email: SENDER_EMAIL },
-        to: [{ email: toEmail, name: toName }],
-        subject: subject,
-        textContent: message
-      })
+    await waitForEmailJS();
+    if (!window.emailjs) { console.log("EmailJS not loaded"); return; }
+    window.emailjs.init({publicKey: EJS_KEY});
+    const result = await window.emailjs.send(EJS_SERVICE, EJS_TMPL, {
+      to_email: toEmail,
+      to_name: toName,
+      subject: subject,
+      message: message,
+      from_name: "BlaineView Cabins",
+      email: toEmail,
+      name: toName
     });
-    const data = await res.json();
-    console.log("Brevo email result:", data);
-  } catch(e) { console.log("Brevo email error:", e); }
+    console.log("Email sent:", result);
+  } catch(e) { console.log("Email error:", e); }
 };
 
 const fbListen=(path,cb)=>{
